@@ -10,11 +10,11 @@ export default function App() {
   // render logic
   const [movies, setMovies] = useState([]);
   // watched movies
-  const [watched, setWatched] = useState([]);
-  // const [watched, setWatched] = useState(function () {
-  //   const storedValue = localStorage.getItem('watched');
-  //   return JSON.parse(storedValue);
-  // });
+  // const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem('watched');
+    return JSON.parse(storedValue);
+  });
 
   const [query, setQuery] = useState('');
 
@@ -73,13 +73,16 @@ export default function App() {
 
             { signal: controller.signal }
           );
-
+          console.log(res);
           // handling errors
           if (!res.ok) throw new Error('something went wrong');
 
           // else
           const data = await res.json();
 
+          // console.log(data);
+
+          // console.log(data.Search);
           if (data.Response === 'False') throw new Error('movie not found');
 
           setMovies(data.Search);
@@ -187,11 +190,6 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
-  useEffect(function () {
-    const el = document.querySelector('.search');
-    // console.log(el);
-    el.focus();
-  }, []);
   return (
     <input
       className="search"
