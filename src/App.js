@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import StarRating from './StarRating';
+import { useRef } from 'react';
 
 const average = arr =>
   arr.reduce((acc, cur, _i, arr) => acc + cur / arr.length, 0);
@@ -73,7 +74,7 @@ export default function App() {
 
             { signal: controller.signal }
           );
-          console.log(res);
+          // console.log(res);
           // handling errors
           if (!res.ok) throw new Error('something went wrong');
 
@@ -190,6 +191,35 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+
+  useEffect(
+    function () {
+      console.log(inputEl.current);
+
+      const callback = e => {
+        // console.log(e);
+        if (document.activeElement === inputEl.current) return;
+        if (e.key === 'Enter') {
+          inputEl.current.focus();
+          setQuery('');
+        }
+      };
+
+      document.addEventListener('keydown', callback);
+      return function () {
+        document.removeEventListener('keydown', callback);
+      };
+    },
+    [setQuery]
+  );
+
+  // useEffect(function () {
+  //   const el = document.querySelector('.search');
+  //   console.log(el);
+  //   el.focus();
+  // }, []);
+
   return (
     <input
       className="search"
@@ -197,6 +227,7 @@ function Search({ query, setQuery }) {
       placeholder="Search movies..."
       value={query}
       onChange={e => setQuery(e.target.value)}
+      ref={inputEl}
     />
   );
 }
