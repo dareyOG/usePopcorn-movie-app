@@ -191,11 +191,12 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
-  const inputEl = useRef(null);
+  // const inputEl = useRef(null);
+  const inputEl = useRef('');
 
   useEffect(
     function () {
-      console.log(inputEl.current);
+      // console.log(inputEl.current);
 
       const callback = e => {
         // console.log(e);
@@ -214,11 +215,11 @@ function Search({ query, setQuery }) {
     [setQuery]
   );
 
-  // useEffect(function () {
-  //   const el = document.querySelector('.search');
-  //   console.log(el);
-  //   el.focus();
-  // }, []);
+  /*  useEffect(function () {
+    const el = document.querySelector('.search');
+    console.log(el);
+    el.focus();
+  }, []); */
 
   return (
     <input
@@ -293,6 +294,17 @@ function SelectedMovie({
   // set user rating
   const [userRating, setUserRating] = useState('');
 
+  const countRef = useRef(0);
+
+  useEffect(
+    function () {
+      if (userRating) {
+        countRef.current++;
+      }
+    },
+    [userRating]
+  );
+
   // test for watched movie
   const isWatched = watched.map(movie => movie.imdbID).includes(selectedID);
 
@@ -314,6 +326,7 @@ function SelectedMovie({
   } = movie;
 
   function handleAdd() {
+    // movie object
     const newlyWatchedMovie = {
       title,
       imdbID: selectedID,
@@ -321,6 +334,7 @@ function SelectedMovie({
       runtime: +runtime.split(' ').at(0),
       poster,
       userRating,
+      countRatingDecisions: countRef.current,
     };
     // add newly watched movie
     onAddWatchedMovie(newlyWatchedMovie);
