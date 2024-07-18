@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import StarRating from './StarRating';
 import { useRef } from 'react';
+import { useMovies } from './useMovies';
 
 const average = arr =>
   arr.reduce((acc, cur, _i, arr) => acc + cur / arr.length, 0);
@@ -8,8 +9,6 @@ const average = arr =>
 const KEY = '23f20639';
 
 export default function App() {
-  // render logic
-  const [movies, setMovies] = useState([]);
   // watched movies
   // const [watched, setWatched] = useState([]);
   const [watched, setWatched] = useState(function () {
@@ -19,15 +18,9 @@ export default function App() {
 
   const [query, setQuery] = useState('');
 
-  // set loading state
-  const [isLoading, setIsLoading] = useState(false);
-
-  // set error state
-  const [error, setError] = useState('');
-
   const [selectedID, setSelectedID] = useState(null);
 
-  // const tempQuery = 'fast&furious';
+  const { movies, isLoading, error } = useMovies(query);
 
   // select movie
   function handleSelectMovie(id) {
@@ -59,57 +52,6 @@ export default function App() {
       localStorage.setItem('watched', JSON.stringify(watched));
     },
     [watched]
-  );
-
-  useEffect(
-    function () {
-      // clean up data fetching
-      const controller = new AbortController();
-
-      async function fetchMovies() {
-        try {
-          setIsLoading(true);
-          const res = await fetch(
-            `http://www.omdbapi.com/?s=${query}&apikey=${KEY}`,
-
-            { signal: controller.signal }
-          );
-          // console.log(res);
-          // handling errors
-          if (!res.ok) throw new Error('something went wrong');
-
-          // else
-          const data = await res.json();
-
-          // console.log(data);
-
-          // console.log(data.Search);
-          if (data.Response === 'False') throw new Error('movie not found');
-
-          setMovies(data.Search);
-        } catch (err) {
-          // console.log(err.message);
-
-          if (err.name !== 'AbortError') setError(err.message);
-        } finally {
-          setIsLoading(false);
-        }
-
-        if (query.length < 3) {
-          setMovies([]);
-          setError('');
-          return;
-        }
-      }
-
-      handleCloseMovie();
-      fetchMovies();
-
-      return function () {
-        controller.abort();
-      };
-    },
-    [query]
   );
 
   return (
@@ -294,6 +236,7 @@ function SelectedMovie({
   // set user rating
   const [userRating, setUserRating] = useState('');
 
+  // persisting data between renders using ref
   const countRef = useRef(0);
 
   useEffect(
