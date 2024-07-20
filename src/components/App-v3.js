@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import StarRating from './StarRating';
-import { useRef } from 'react';
-import { useMovies } from './useMovies';
-import { useLocalStorageState } from './useLocalStorageState';
+import { useKey } from './useKey';
 
 const average = arr =>
   arr.reduce((acc, cur, _i, arr) => acc + cur / arr.length, 0);
@@ -11,12 +9,19 @@ const KEY = '23f20639';
 
 export default function App() {
   const [query, setQuery] = useState('');
-
+  // render logic
+  const [movies, setMovies] = useState([]);
+  // set loading state
+  const [isLoading, setIsLoading] = useState(false);
+  // set error state
+  const [error, setError] = useState('');
   const [selectedID, setSelectedID] = useState(null);
-
-  const { movies, isLoading, error } = useMovies(query);
-
-  const [watched, setWatched] = useLocalStorageState([], 'watched');
+  // watched movies
+  // const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useState(function () {
+    const storedValue = localStorage.getItem('watched');
+    return JSON.parse(storedValue);
+  });
 
   // select movie
   function handleSelectMovie(id) {
@@ -42,6 +47,67 @@ export default function App() {
     setWatched(watched => watched.filter(movie => movie.imdbID !== id));
   }
 
+  // Add movie to local storage (method 2 -- ideal method)
+  useEffect(
+    function () {
+      localStorage.setItem('watched', JSON.stringify(value));
+    },
+    [value]
+  );
+
+  useEffect(
+    function () {
+      // clean up data fetching
+      const controller = new AbortController();
+
+      async function fetchMovies() {
+        try {
+          setIsLoading(true);
+          setError('');
+          const res = await fetch(
+            `http://www.omdbapi.com/?s=${query}&apikey=${KEY}`,
+
+            { signal: controller.signal }
+          );
+          // console.log(res);
+          // handling errors
+          if (!res.ok) throw new Error('something went wrong');
+
+          // else
+          const data = await res.json();
+
+          // console.log(data);
+
+          // console.log(data.Search);
+          if (data.Response === 'False') throw new Error('movie not found');
+
+          setMovies(data.Search);
+        } catch (err) {
+          // console.log(err.message);
+
+          if (err.name !== 'AbortError') setError(err.message);
+        } finally {
+          setIsLoading(false);
+        }
+
+        if (query.length < 3) {
+          setMovies([]);
+          setError('');
+          return;
+        }
+      }
+
+      handleCloseMovie();
+
+      fetchMovies();
+
+      return function () {
+        controller.abort();
+      };
+    },
+    [query]
+  );
+
   return (
     <>
       <NavBar>
@@ -55,8 +121,8 @@ export default function App() {
           {/* isLoading ? <Loader /> : <MovieList movies={movies} /> */}
 
           {/* {isLoading && <Loader />}
-          {isLoading && !error && <MovieList movies={movies} />}
-          {error && <ErrorMessage message={error} />} */}
+        {isLoading && !error && <MovieList movies={movies} />}
+        {error && <ErrorMessage message={error} />} */}
 
           {isLoading ? (
             <Loader />
@@ -88,7 +154,6 @@ export default function App() {
     </>
   );
 }
-
 function Loader() {
   return <p className="loader">Loading...</p>;
 }
@@ -188,6 +253,31 @@ function Box({ children }) {
   );
 }
 
+/*
+function WatchedBox() {
+  const [watched, setWatched] = useState(tempWatchedData);
+  const [isOpen2, setIsOpen2] = useState(true);
+
+  return (
+    <div className="box">
+      <button
+        className="btn-toggle"
+        onClick={() => setIsOpen2((open) => !open)}
+      >
+        {isOpen2 ? "–" : "+"}
+      </button>
+
+      {isOpen2 && (
+        <>
+          <WatchedSummary watched={watched} />
+          <WatchedMoviesList watched={watched} />
+        </>
+      )}
+    </div>
+  );
+}
+*/
+
 function MovieList({ movies, onSelectMovie }) {
   return (
     <ul className="list list-movies">
@@ -210,7 +300,6 @@ function Movie({ movie, onSelectMovie }) {
     </li>
   );
 }
-
 function SelectedMovie({
   selectedID,
   onCloseMovie,
